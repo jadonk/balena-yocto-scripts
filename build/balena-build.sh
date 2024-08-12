@@ -84,6 +84,7 @@ balena_build_run_barys() {
 	fi
 
 	pushd "${work_dir}"
+	pwd
 	printf "Submodule details:\n\n"
 	git submodule status
 	popd
@@ -166,6 +167,7 @@ main() {
 		_shared_dir="${_shared_dir:-"${YOCTO_DIR}"}"
 		[ -z "${_shared_dir}" ] && echo "Shared directory is required" && exit 1
 
+		echo "Args (${script_dir}):" "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_uid}" "${_gid}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
 		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_uid}" "${_gid}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
 	fi
 }
