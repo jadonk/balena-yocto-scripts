@@ -11,8 +11,7 @@ trap 'balena_docker_stop fail' SIGINT SIGTERM
 INSTALL_DIR="/work"
 
 # Create the normal user to be used for bitbake (barys)
-getent passwd $BUILDER_UID
-if $?; then
+if getent passwd $BUILDER_UID ; then
   echo "[INFO] User $BUILDER_UID already exists"
   USER="$(id -nu $BUILDER_UID)"
 else
