@@ -18,6 +18,8 @@ Usage: ${script_name} [OPTIONS]
     -t Balena API token (optional - private apps access)
     -k Keep local containers (optional - by default container iamges are removed)
     -h Display usage
+	-U Bitbake user UID
+	-G Bitbake user GID
 EOF
 	exit 0
 }
@@ -59,6 +61,8 @@ balena_build_run_barys() {
 	local _docker_run_args="${9:-"--rm"}"
 	local _dl_dir
 	local _sstate_dir
+	local _uid="${10}"
+	local _gid="${11}"
 	local _image_repo="${HELPER_IMAGE_REPO:-"ghcr.io/balena-os/balena-yocto-scripts"}"
 
 	[ -z "${_device_type}" ] && echo "Device type is required"  && exit 1
@@ -73,6 +77,8 @@ balena_build_run_barys() {
 	[ -n "${_bitbake_targets}" ] && _bitbake_targets="--bitbake-target ${_bitbake_targets}"
 
 	_token=${_token:-"$(balena_lib_token)"}
+	_uid=${_uid:-"$(id -u)"}
+	_gid=${_gid:-"$(id -g)"}
 
 	if ! __check_docker; then
 		echo "Docker needs to be installed"
@@ -96,9 +102,9 @@ balena_build_run_barys() {
 		-v "${_sstate_dir}":/yocto/shared-sstate \
 		-v "${SSH_AUTH_SOCK}":/tmp/ssh-agent \
 		-e SSH_AUTH_SOCK=/tmp/ssh-agent \
-		-e BUILDER_UID="$(id -u)" \
+		-e BUILDER_UID="${_uid}" \
 		-e VERBOSE="${VERBOSE}" \
-		-e BUILDER_GID="$(id -g)" \
+		-e BUILDER_GID="${_gid}" \
 		-e BALENA_TOKEN="${_token}" \
 		-e API_ENV="${_api_env}" \
 		--name $BUILD_CONTAINER_NAME \
@@ -130,12 +136,14 @@ main() {
 	local _bitbake_targets
 	local _barys_args
 	local _keep_helpers=0
+	local _uid
+	local _gid
 	## Sanity checks
 	if [ ${#} -lt 1 ] ; then
 		usage
 		exit 1
 	else
-		while getopts "hd:a:t:s:b:i:g:k" c; do
+		while getopts "hd:a:t:s:b:i:g:kU:G:" c; do
 			case "${c}" in
 				d) _device_type="${OPTARG}";;
 				a) _api_env="${OPTARG}";;
@@ -145,6 +153,8 @@ main() {
 				i) _bitbake_targets="${OPTARG}" ;;
 				g) _barys_args="${OPTARG}" ;;
 				k) _keep_helpers=1 ;;
+				U) _uid="${OPTARG}" ;;
+				G) _gid="${OPTARG}" ;;
 				h) usage;;
 				*) usage;exit 1;;
 			esac
@@ -158,7 +168,7 @@ main() {
 		_shared_dir="${_shared_dir:-"${YOCTO_DIR}"}"
 		[ -z "${_shared_dir}" ] && echo "Shared directory is required" && exit 1
 
-		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
+		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}" "${_uid}" "${_gid}" 
 	fi
 }
 
