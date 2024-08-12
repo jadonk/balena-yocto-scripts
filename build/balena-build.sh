@@ -18,8 +18,8 @@ Usage: ${script_name} [OPTIONS]
     -t Balena API token (optional - private apps access)
     -k Keep local containers (optional - by default container iamges are removed)
     -h Display usage
-	-U Bitbake user UID
-	-G Bitbake user GID
+    -U Bitbake user UID
+    -G Bitbake user GID
 EOF
 	exit 0
 }
@@ -54,15 +54,15 @@ balena_build_run_barys() {
 	local _shared_dir="${2}"
 	local _api_env="${3:-"balena-cloud.com"}"
 	local _token="${4}"
-	local _keep_helpers="${5}"
-	local _bitbake_args="${6}"
-	local _bitbake_targets="${7}"
-	local _barys_args="${8}"
-	local _docker_run_args="${9:-"--rm"}"
+	local _uid="${5:-"$(id -u)"}"
+	local _gid="${6:-"$(id -g)"}"
+	local _keep_helpers="${7}"
+	local _bitbake_args="${8}"
+	local _bitbake_targets="${9}"
+	local _barys_args="${10}"
+	local _docker_run_args="${11:-"--rm"}"
 	local _dl_dir
 	local _sstate_dir
-	local _uid="${10}"
-	local _gid="${11}"
 	local _image_repo="${HELPER_IMAGE_REPO:-"ghcr.io/balena-os/balena-yocto-scripts"}"
 
 	[ -z "${_device_type}" ] && echo "Device type is required"  && exit 1
@@ -77,8 +77,6 @@ balena_build_run_barys() {
 	[ -n "${_bitbake_targets}" ] && _bitbake_targets="--bitbake-target ${_bitbake_targets}"
 
 	_token=${_token:-"$(balena_lib_token)"}
-	_uid=${_uid:-"$(id -u)"}
-	_gid=${_gid:-"$(id -g)"}
 
 	if ! __check_docker; then
 		echo "Docker needs to be installed"
@@ -168,7 +166,7 @@ main() {
 		_shared_dir="${_shared_dir:-"${YOCTO_DIR}"}"
 		[ -z "${_shared_dir}" ] && echo "Shared directory is required" && exit 1
 
-		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}" "${_uid}" "${_gid}" 
+		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_uid}" "${_gid}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
 	fi
 }
 
