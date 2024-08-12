@@ -53,9 +53,9 @@ balena_build_run_barys() {
 	local _device_type="${1}"
 	local _shared_dir="${2}"
 	local _api_env="${3:-"balena-cloud.com"}"
-	local _token="${4}"
-	local _uid="${5:-"$(id -u)"}"
-	local _gid="${6:-"$(id -g)"}"
+	local _uid="${4:-"$(id -u)"}"
+	local _gid="${5:-"$(id -g)"}"
+	local _token="${6}"
 	local _keep_helpers="${7}"
 	local _bitbake_args="${8}"
 	local _bitbake_targets="${9}"
@@ -95,6 +95,32 @@ balena_build_run_barys() {
 		exit 1
 	fi
 	[ -z "${SSH_AUTH_SOCK}" ] && echo "No SSH_AUTH_SOCK in environment - private repositories won't be accessible to the builder" && SSH_AUTH_SOCK="/dev/null"
+	echo ${DOCKER} run --rm ${_docker_run_args} \
+		-v "${work_dir}":/work \
+		-v "${_dl_dir}":/yocto/shared-downloads \
+		-v "${_sstate_dir}":/yocto/shared-sstate \
+		-v "${SSH_AUTH_SOCK}":/tmp/ssh-agent \
+		-e SSH_AUTH_SOCK=/tmp/ssh-agent \
+		-e BUILDER_UID="${_uid}" \
+		-e VERBOSE="${VERBOSE}" \
+		-e BUILDER_GID="${_gid}" \
+		-e BALENA_TOKEN="${_token}" \
+		-e API_ENV="${_api_env}" \
+		--name $BUILD_CONTAINER_NAME \
+		--privileged \
+		"${helper_image_id}" \
+		/prepare-and-start.sh \
+		--log \
+		--machine "${_device_type}" \
+		${_bitbake_args} \
+		${_bitbake_targets} \
+		${_barys_args} \
+		-a BALENA_API_ENV=${_api_env} \
+		-a BALENA_API_TOKEN=${_token} \
+		--shared-downloads /yocto/shared-downloads \
+		--shared-sstate /yocto/shared-sstate \
+		--rm-work
+
 	${DOCKER} run --rm ${_docker_run_args} \
 		-v "${work_dir}":/work \
 		-v "${_dl_dir}":/yocto/shared-downloads \
@@ -142,7 +168,7 @@ main() {
 		usage
 		exit 1
 	else
-		while getopts "hd:a:t:s:b:i:g:kU:G:" c; do
+		while getopts "hd:a:U:G:t:s:b:i:g:k" c; do
 			case "${c}" in
 				d) _device_type="${OPTARG}";;
 				a) _api_env="${OPTARG}";;
@@ -167,8 +193,8 @@ main() {
 		_shared_dir="${_shared_dir:-"${YOCTO_DIR}"}"
 		[ -z "${_shared_dir}" ] && echo "Shared directory is required" && exit 1
 
-		echo "Args (${script_dir}):" "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_uid}" "${_gid}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
-		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_token}" "${_uid}" "${_gid}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
+		echo "Args (${script_dir}):" "${_device_type}" "${_shared_dir}" "${_api_env}" "${_uid}" "${_gid}" "${_token}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
+		balena_build_run_barys "${_device_type}" "${_shared_dir}" "${_api_env}" "${_uid}" "${_gid}" "${_token}" "${_keep_helpers}" "${_bitbake_args}" "${_bitbake_targets}" "${_barys_args}"
 	fi
 }
 
